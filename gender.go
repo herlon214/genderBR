@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"net/http"
 	"net/url"
 	"sync"
@@ -16,14 +17,10 @@ type NamesAPIResult struct {
 }
 
 type Result struct {
-	Name            string `json:"name"`
-	Gender          string `json:"gender"`
-	BothFrequency   int    `json:"bothGendersFrequency"`
-	MaleFrequency   int    `json:"maleFrequency"`
-	FemaleFrequency int    `json:"femaleFrequency"`
-	BothError       error
-	MaleErr         error
-	FemaleErr       error
+	Name      string  `json:"name"`
+	Gender    string  `json:"gender"`
+	Frequency float64 `json:"frequency"`
+	Error     error   `json:"error"`
 }
 
 var cacheMx sync.Mutex
@@ -42,44 +39,34 @@ func For(names []string) []Result {
 		// Search for both genders
 		bothResult, bothErr := basicSearch(name, "")
 		if bothErr != nil {
-			result.BothFrequency = 0
-			result.BothError = bothErr
-		} else {
-			result.BothFrequency = bothResult.Frequency
+			result.Error = bothErr
+
+			results = append(results, result)
+			continue
 		}
 
 		// Search only for male
 		maleResult, maleErr := basicSearch(name, "m")
 		if maleErr != nil {
-			result.MaleFrequency = 0
-			result.MaleErr = maleErr
-		} else {
-			result.MaleFrequency = maleResult.Frequency
-		}
+			result.Error = maleErr
 
-		// Search only for female
-		femaleResult, femaleErr := basicSearch(name, "f")
-		if femaleErr != nil {
-			result.FemaleFrequency = 0
-			result.FemaleErr = femaleErr
-		} else {
-			result.FemaleFrequency = femaleResult.Frequency
+			results = append(results, result)
+			continue
 		}
 
 		// Calculate frequencies
-		if bothErr == nil && maleErr == nil && femaleErr == nil {
-			total := float64(bothResult.Frequency)
-			male := float64(maleResult.Frequency)
-			female := float64(femaleResult.Frequency)
+		total := float64(bothResult.Frequency)
+		male := float64(maleResult.Frequency)
 
-			malePercentage := male / total * 100
-			femalePercentage := female / total * 100
+		malePercentage := male / total
+		femalePercentage := math.Abs(male - 1)
 
-			if malePercentage > femalePercentage {
-				result.Gender = "Male"
-			} else {
-				result.Gender = "Female"
-			}
+		if malePercentage > femalePercentage {
+			result.Gender = "Male"
+			result.Frequency = malePercentage
+		} else {
+			result.Gender = "Female"
+			result.Frequency = femalePercentage
 		}
 
 		results = append(results, result)
