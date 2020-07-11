@@ -75,9 +75,6 @@ func For(names []string) []Result {
 			malePercentage := male / total * 100
 			femalePercentage := female / total * 100
 
-			fmt.Println(bothResult, maleResult, femaleResult)
-			fmt.Println(malePercentage, femalePercentage)
-
 			if malePercentage > femalePercentage {
 				result.Gender = "Male"
 			} else {
