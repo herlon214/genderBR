@@ -59,7 +59,7 @@ func For(names []string) []Result {
 		male := float64(maleResult.Frequency)
 
 		malePercentage := male / total
-		femalePercentage := math.Abs(male - 1)
+		femalePercentage := math.Abs(malePercentage - 1)
 
 		if malePercentage > femalePercentage {
 			result.Gender = "Male"
